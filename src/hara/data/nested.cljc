@@ -1,8 +1,9 @@
 (ns hara.data.nested
   (:require [hara.common.checks :refer [hash-map?]]
+            [clojure.set :as set]
+    #?@(:clj [
             [hara.common.error :refer [suppress]]
-            [hara.expression.shorthand :as expr]
-            [clojure.set :as set]))
+            [hara.expression.shorthand :as expr]])))
 
 (defn keys-nested
   "The set of all nested keys in a map
@@ -66,7 +67,7 @@
                     m
                     (key-paths m (dec arr))))
 
-          :else (throw (Exception. (str "`arr` has to be a seq or a number not " arr))))))
+          :else (throw (ex-info (str "`arr` has to be a seq or a number not " arr) {:array arr :m m})))))
 
 (defn update-vals-in
   "updates all values in a map with given function
@@ -102,7 +103,7 @@
                     m
                     (key-paths m (dec arr))))
 
-          :else (throw (Exception. (str "`arr` has to be a seq or a number not " arr))))))
+          :else (throw (ex-info (str "`arr` has to be a seq or a number not " arr) {:array arr :m m})))))
 
 
 (defn merge-nested
@@ -134,7 +135,7 @@
               m1
               m2))
   ([m1 m2 & ms]
-     (apply merge-nested (merge-nested m1 m2) ms)))
+   (apply merge-nested (merge-nested m1 m2) ms)))
 
 (defn merge-nil-nested
   "Merges nested values from left to right, provided the merged value does not exist
@@ -160,7 +161,7 @@
                         out)))
               m1 m2))
   ([m1 m2 & more]
-     (apply merge-nil-nested (merge-nil-nested m1 m2) more)))
+   (apply merge-nil-nested (merge-nil-nested m1 m2) more)))
 
 (defn dissoc-nested
   "Returns `m` without all nested keys in `ks`.
@@ -213,29 +214,30 @@
              {}
              m1))
 
-(defn clean-nested
-  "Returns a associative with nils and empty hash-maps removed.
+#?(:clj
+   (defn clean-nested
+     "Returns a associative with nils and empty hash-maps removed.
 
-    (clean-nested {:a {:b {:c {}}}})
-    => {}
+       (clean-nested {:a {:b {:c {}}}})
+       => {}
 
-    (clean-nested {:a {:b {:c {} :d 1 :e nil}}})
-    => {:a {:b {:d 1}}}"
-  {:added "2.1"}
-  ([m] (clean-nested m (constantly false)))
-  ([m prchk]
-   (reduce-kv (fn [out k v]
-                (cond (or (nil? v)
-                          (suppress (expr/check-> m prchk)))
-                      out
+       (clean-nested {:a {:b {:c {} :d 1 :e nil}}})
+       => {:a {:b {:d 1}}}"
+     {:added "2.1"}
+     ([m] (clean-nested m (constantly false)))
+     ([m prchk]
+      (reduce-kv (fn [out k v]
+                   (cond (or (nil? v)
+                             (suppress (expr/check-> m prchk)))
+                         out
 
-                      (hash-map? v)
-                      (let [subv (clean-nested v prchk)]
-                        (if (empty? subv)
-                          out
-                          (assoc out k subv)))
+                         (hash-map? v)
+                         (let [subv (clean-nested v prchk)]
+                           (if (empty? subv)
+                             out
+                             (assoc out k subv)))
 
-                      :else
-                      (assoc out k v)))
-              {}
-              m)))
+                         :else
+                         (assoc out k v)))
+                 {}
+                 m))))

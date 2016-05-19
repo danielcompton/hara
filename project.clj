@@ -3,7 +3,8 @@
   :url "https://github.com/zcaudate/hara"
   :license {:name "The MIT License"
             :url "http://http://opensource.org/licenses/MIT"}
-  :dependencies [[org.clojure/clojure "1.8.0"]]
+  :dependencies [[org.clojure/clojure "1.8.0"]
+                 [org.clojure/clojurescript "1.8.51" :scope "provided"]]
   :profiles {:dev {:dependencies [[midje "1.6.3"]
                                   [compojure "1.4.0"]
                                   [ring "1.4.0"]
